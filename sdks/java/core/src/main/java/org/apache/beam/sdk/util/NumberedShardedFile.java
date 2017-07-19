@@ -64,43 +64,43 @@ public class NumberedShardedFile implements ShardedFile {
   private static final Pattern DEFAULT_SHARD_TEMPLATE =
       Pattern.compile("(?x) \\S* (?<shardnum> \\d+) -of- (?<numshards> \\d+)");
 
-  private final String filePattern;
+  private final String filePath;
   private final Pattern shardTemplate;
 
   /**
    * Constructor that uses default shard template.
    *
-   * @param filePattern path or glob of files to include
+   * @param filePath path or glob of files to include
    */
-  public NumberedShardedFile(String filePattern) {
-    this(filePattern, DEFAULT_SHARD_TEMPLATE);
+  public NumberedShardedFile(String filePath) {
+    this(filePath, DEFAULT_SHARD_TEMPLATE);
   }
 
   /**
    * Constructor.
    *
-   * @param filePattern path or glob of files to include
+   * @param filePath path or glob of files to include
    * @param shardTemplate template of shard name to parse out the total number of shards
    *                      which is used in I/O retry to avoid inconsistency of filesystem.
    *                      Customized template should assign name "numshards" to capturing
    *                      group - total shard number.
    */
-  public NumberedShardedFile(String filePattern, Pattern shardTemplate) {
+  public NumberedShardedFile(String filePath, Pattern shardTemplate) {
     checkArgument(
-        !Strings.isNullOrEmpty(filePattern),
-        "Expected valid file path, but received %s", filePattern);
+        !Strings.isNullOrEmpty(filePath),
+        "Expected valid file path, but received %s", filePath);
     checkNotNull(
         shardTemplate,
         "Expected non-null shard pattern. "
             + "Please call the other constructor to use default pattern: %s",
         DEFAULT_SHARD_TEMPLATE);
 
-    this.filePattern = filePattern;
+    this.filePath = filePath;
     this.shardTemplate = shardTemplate;
   }
 
-  public String getFilePattern() {
-    return filePattern;
+  public String getFilePath() {
+    return filePath;
   }
 
   /**
@@ -112,14 +112,14 @@ public class NumberedShardedFile implements ShardedFile {
   @Override
   public List<String> readFilesWithRetries(Sleeper sleeper, BackOff backOff)
       throws IOException, InterruptedException {
-    IOChannelFactory factory = IOChannelUtils.getFactory(filePattern);
+    IOChannelFactory factory = IOChannelUtils.getFactory(filePath);
     IOException lastException = null;
 
     do {
       try {
         // Match inputPath which may contains glob
-        Collection<String> files = factory.match(filePattern);
-        LOG.debug("Found {} file(s) by matching the path: {}", files.size(), filePattern);
+        Collection<String> files = factory.match(filePath);
+        LOG.debug("Found {} file(s) by matching the path: {}", files.size(), filePath);
 
         if (files.isEmpty() || !checkTotalNumOfFiles(files)) {
           continue;
@@ -152,7 +152,7 @@ public class NumberedShardedFile implements ShardedFile {
 
   @Override
   public String toString() {
-    return String.format("%s with shard template '%s'", filePattern, shardTemplate);
+    return String.format("%s with shard template '%s'", filePath, shardTemplate);
   }
 
   /**

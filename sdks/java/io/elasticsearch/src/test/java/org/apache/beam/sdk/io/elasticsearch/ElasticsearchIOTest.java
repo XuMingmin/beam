@@ -34,6 +34,7 @@ import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.SourceTestUtils;
 import org.apache.beam.sdk.testing.TestPipeline;
+import org.apache.beam.sdk.testing.ValidatesRunner;
 import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.DoFnTester;
@@ -51,6 +52,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
@@ -133,6 +135,7 @@ public class ElasticsearchIOTest implements Serializable {
   }
 
   @Test
+  @Category(ValidatesRunner.class)
   public void testRead() throws Exception {
     ElasticSearchIOTestUtils.insertTestDocuments(ES_INDEX, ES_TYPE, NUM_DOCS, node.client());
 
@@ -149,6 +152,7 @@ public class ElasticsearchIOTest implements Serializable {
   }
 
   @Test
+  @Category(ValidatesRunner.class)
   public void testReadWithQuery() throws Exception {
     ElasticSearchIOTestUtils.insertTestDocuments(ES_INDEX, ES_TYPE, NUM_DOCS, node.client());
 
@@ -175,6 +179,7 @@ public class ElasticsearchIOTest implements Serializable {
   }
 
   @Test
+  @Category(ValidatesRunner.class)
   public void testWrite() throws Exception {
     List<String> data =
         ElasticSearchIOTestUtils.createDocuments(

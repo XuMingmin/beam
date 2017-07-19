@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.beam.runners.core.InMemoryStateInternals.InMemoryBag;
-import org.apache.beam.runners.core.InMemoryStateInternals.InMemoryCombiningState;
+import org.apache.beam.runners.core.InMemoryStateInternals.InMemoryCombiningValue;
 import org.apache.beam.runners.core.InMemoryStateInternals.InMemoryMap;
 import org.apache.beam.runners.core.InMemoryStateInternals.InMemorySet;
 import org.apache.beam.runners.core.InMemoryStateInternals.InMemoryState;
@@ -45,8 +45,8 @@ import org.apache.beam.sdk.transforms.CombineWithContext.KeyedCombineFnWithConte
 import org.apache.beam.sdk.transforms.windowing.BoundedWindow;
 import org.apache.beam.sdk.transforms.windowing.OutputTimeFn;
 import org.apache.beam.sdk.util.CombineFnUtil;
+import org.apache.beam.sdk.util.state.AccumulatorCombiningState;
 import org.apache.beam.sdk.util.state.BagState;
-import org.apache.beam.sdk.util.state.CombiningState;
 import org.apache.beam.sdk.util.state.MapState;
 import org.apache.beam.sdk.util.state.SetState;
 import org.apache.beam.sdk.util.state.State;
@@ -306,18 +306,19 @@ public class CopyOnAccessInMemoryStateInternals<K> implements StateInternals<K> 
           }
 
           @Override
-          public <InputT, AccumT, OutputT> CombiningState<InputT, AccumT, OutputT>
+          public <InputT, AccumT, OutputT> AccumulatorCombiningState<InputT, AccumT, OutputT>
               bindCombiningValue(
-                  StateTag<? super K, CombiningState<InputT, AccumT, OutputT>> address,
+                  StateTag<? super K, AccumulatorCombiningState<InputT, AccumT, OutputT>> address,
                   Coder<AccumT> accumCoder, CombineFn<InputT, AccumT, OutputT> combineFn) {
             if (containedInUnderlying(namespace, address)) {
               @SuppressWarnings("unchecked")
-              InMemoryState<? extends CombiningState<InputT, AccumT, OutputT>> existingState =
-                  (InMemoryState<? extends CombiningState<InputT, AccumT, OutputT>>)
-                      underlying.get().get(namespace, address, c);
+              InMemoryState<? extends AccumulatorCombiningState<InputT, AccumT, OutputT>>
+                  existingState = (
+                  InMemoryState<? extends AccumulatorCombiningState<InputT, AccumT,
+                                            OutputT>>) underlying.get().get(namespace, address, c);
               return existingState.copy();
             } else {
-              return new InMemoryCombiningState<>(
+              return new InMemoryCombiningValue<>(
                   key, combineFn.asKeyedFn());
             }
           }
@@ -366,26 +367,27 @@ public class CopyOnAccessInMemoryStateInternals<K> implements StateInternals<K> 
           }
 
           @Override
-          public <InputT, AccumT, OutputT> CombiningState<InputT, AccumT, OutputT>
+          public <InputT, AccumT, OutputT> AccumulatorCombiningState<InputT, AccumT, OutputT>
               bindKeyedCombiningValue(
-                  StateTag<? super K, CombiningState<InputT, AccumT, OutputT>> address,
+                  StateTag<? super K, AccumulatorCombiningState<InputT, AccumT, OutputT>> address,
                   Coder<AccumT> accumCoder,
                   KeyedCombineFn<? super K, InputT, AccumT, OutputT> combineFn) {
             if (containedInUnderlying(namespace, address)) {
               @SuppressWarnings("unchecked")
-              InMemoryState<? extends CombiningState<InputT, AccumT, OutputT>> existingState =
-                  (InMemoryState<? extends CombiningState<InputT, AccumT, OutputT>>)
-                      underlying.get().get(namespace, address, c);
+              InMemoryState<? extends AccumulatorCombiningState<InputT, AccumT, OutputT>>
+                  existingState = (
+                  InMemoryState<? extends AccumulatorCombiningState<InputT, AccumT,
+                                            OutputT>>) underlying.get().get(namespace, address, c);
               return existingState.copy();
             } else {
-              return new InMemoryCombiningState<>(key, combineFn);
+              return new InMemoryCombiningValue<>(key, combineFn);
             }
           }
 
           @Override
-          public <InputT, AccumT, OutputT> CombiningState<InputT, AccumT, OutputT>
+          public <InputT, AccumT, OutputT> AccumulatorCombiningState<InputT, AccumT, OutputT>
           bindKeyedCombiningValueWithContext(
-                  StateTag<? super K, CombiningState<InputT, AccumT, OutputT>> address,
+                  StateTag<? super K, AccumulatorCombiningState<InputT, AccumT, OutputT>> address,
                   Coder<AccumT> accumCoder,
                   KeyedCombineFnWithContext<? super K, InputT, AccumT, OutputT> combineFn) {
             return bindKeyedCombiningValue(
@@ -447,9 +449,9 @@ public class CopyOnAccessInMemoryStateInternals<K> implements StateInternals<K> 
           }
 
           @Override
-          public <InputT, AccumT, OutputT> CombiningState<InputT, AccumT, OutputT>
+          public <InputT, AccumT, OutputT> AccumulatorCombiningState<InputT, AccumT, OutputT>
               bindCombiningValue(
-                  StateTag<? super K, CombiningState<InputT, AccumT, OutputT>> address,
+                  StateTag<? super K, AccumulatorCombiningState<InputT, AccumT, OutputT>> address,
                   Coder<AccumT> accumCoder, CombineFn<InputT, AccumT, OutputT> combineFn) {
             return underlying.get(namespace, address, c);
           }
@@ -474,18 +476,18 @@ public class CopyOnAccessInMemoryStateInternals<K> implements StateInternals<K> 
           }
 
           @Override
-          public <InputT, AccumT, OutputT> CombiningState<InputT, AccumT, OutputT>
+          public <InputT, AccumT, OutputT> AccumulatorCombiningState<InputT, AccumT, OutputT>
               bindKeyedCombiningValue(
-                  StateTag<? super K, CombiningState<InputT, AccumT, OutputT>> address,
+                  StateTag<? super K, AccumulatorCombiningState<InputT, AccumT, OutputT>> address,
                   Coder<AccumT> accumCoder,
                   KeyedCombineFn<? super K, InputT, AccumT, OutputT> combineFn) {
             return underlying.get(namespace, address, c);
           }
 
           @Override
-          public <InputT, AccumT, OutputT> CombiningState<InputT, AccumT, OutputT>
+          public <InputT, AccumT, OutputT> AccumulatorCombiningState<InputT, AccumT, OutputT>
           bindKeyedCombiningValueWithContext(
-                  StateTag<? super K, CombiningState<InputT, AccumT, OutputT>> address,
+                  StateTag<? super K, AccumulatorCombiningState<InputT, AccumT, OutputT>> address,
                   Coder<AccumT> accumCoder,
                   KeyedCombineFnWithContext<? super K, InputT, AccumT, OutputT> combineFn) {
             return bindKeyedCombiningValue(

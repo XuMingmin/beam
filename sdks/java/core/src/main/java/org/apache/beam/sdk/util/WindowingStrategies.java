@@ -31,7 +31,7 @@ import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.common.runner.v1.RunnerApi;
 import org.apache.beam.sdk.common.runner.v1.RunnerApi.Components;
 import org.apache.beam.sdk.common.runner.v1.RunnerApi.FunctionSpec;
-import org.apache.beam.sdk.common.runner.v1.RunnerApi.SdkFunctionSpec;
+import org.apache.beam.sdk.common.runner.v1.RunnerApi.UrnWithParameter;
 import org.apache.beam.sdk.transforms.windowing.OutputTimeFn;
 import org.apache.beam.sdk.transforms.windowing.OutputTimeFns;
 import org.apache.beam.sdk.transforms.windowing.Trigger;
@@ -148,10 +148,10 @@ public class WindowingStrategies implements Serializable {
     // TODO: re-use components
     String windowCoderId = UUID.randomUUID().toString();
 
-    RunnerApi.SdkFunctionSpec windowFnSpec =
-        RunnerApi.SdkFunctionSpec.newBuilder()
+    RunnerApi.FunctionSpec windowFnSpec =
+        RunnerApi.FunctionSpec.newBuilder()
             .setSpec(
-                FunctionSpec.newBuilder()
+                UrnWithParameter.newBuilder()
                     .setUrn(CUSTOM_WINDOWFN_URN)
                     .setParameter(
                         Any.pack(
@@ -165,9 +165,9 @@ public class WindowingStrategies implements Serializable {
     RunnerApi.Coder windowCoderProto =
         RunnerApi.Coder.newBuilder()
             .setSpec(
-                SdkFunctionSpec.newBuilder()
+                FunctionSpec.newBuilder()
                     .setSpec(
-                        FunctionSpec.newBuilder()
+                        UrnWithParameter.newBuilder()
                             .setUrn(CUSTOM_CODER_URN)
                             .setParameter(
                                 Any.pack(
@@ -180,7 +180,7 @@ public class WindowingStrategies implements Serializable {
             .build();
 
     return RunnerApi.MessageWithComponents.newBuilder()
-        .setSdkFunctionSpec(windowFnSpec)
+        .setFunctionSpec(windowFnSpec)
         .setComponents(Components.newBuilder().putCoders(windowCoderId, windowCoderProto))
         .build();
   }
@@ -204,7 +204,7 @@ public class WindowingStrategies implements Serializable {
             .setClosingBehavior(toProto(windowingStrategy.getClosingBehavior()))
             .setAllowedLateness(windowingStrategy.getAllowedLateness().getMillis())
             .setTrigger(Triggers.toProto(windowingStrategy.getTrigger()))
-            .setWindowFn(windowFnWithComponents.getSdkFunctionSpec());
+            .setWindowFn(windowFnWithComponents.getFunctionSpec());
 
     return RunnerApi.MessageWithComponents.newBuilder()
         .setWindowingStrategy(windowingStrategyProto)
@@ -236,7 +236,7 @@ public class WindowingStrategies implements Serializable {
       RunnerApi.WindowingStrategy proto, RunnerApi.Components components)
       throws InvalidProtocolBufferException {
 
-    SdkFunctionSpec windowFnSpec = proto.getWindowFn();
+    FunctionSpec windowFnSpec = proto.getWindowFn();
 
     checkArgument(
         windowFnSpec.getSpec().getUrn().equals(CUSTOM_WINDOWFN_URN),

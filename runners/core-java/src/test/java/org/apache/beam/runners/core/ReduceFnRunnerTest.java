@@ -65,7 +65,6 @@ import org.apache.beam.sdk.transforms.windowing.SlidingWindows;
 import org.apache.beam.sdk.transforms.windowing.Trigger;
 import org.apache.beam.sdk.transforms.windowing.Window.ClosingBehavior;
 import org.apache.beam.sdk.transforms.windowing.WindowFn;
-import org.apache.beam.sdk.transforms.windowing.WindowMappingFn;
 import org.apache.beam.sdk.util.SideInputReader;
 import org.apache.beam.sdk.util.TimeDomain;
 import org.apache.beam.sdk.util.WindowedValue;
@@ -361,9 +360,8 @@ public class ReduceFnRunnerTest {
         WindowingStrategy.of(FixedWindows.of(Duration.millis(2)))
             .withMode(AccumulationMode.ACCUMULATING_FIRED_PANES);
 
-    WindowMappingFn<?> sideInputWindowMappingFn =
-        FixedWindows.of(Duration.millis(4)).getDefaultWindowMappingFn();
-    when(mockView.getWindowMappingFn()).thenReturn((WindowMappingFn) sideInputWindowMappingFn);
+    WindowingStrategy<?, IntervalWindow> sideInputWindowingStrategy =
+        WindowingStrategy.of(FixedWindows.of(Duration.millis(4)));
 
     TestOptions options = PipelineOptionsFactory.as(TestOptions.class);
     options.setValue(expectedValue);
@@ -385,6 +383,10 @@ public class ReduceFnRunnerTest {
                 return firstWindowSideInput + (int) startMs;
               }
             });
+
+    @SuppressWarnings({"rawtypes", "unchecked", "unused"})
+    Object suppressWarningsVar = when(mockView.getWindowingStrategyInternal())
+        .thenReturn((WindowingStrategy) sideInputWindowingStrategy);
 
     SumAndVerifyContextFn combineFn = new SumAndVerifyContextFn(mockView, expectedValue);
     ReduceFnTester<Integer, Integer, IntervalWindow> tester = ReduceFnTester.combining(

@@ -98,7 +98,7 @@ public class PushbackSideInputDoFnRunner<InputT, OutputT> implements DoFnRunner<
     }
     for (PCollectionView<?> view : views) {
       BoundedWindow sideInputWindow =
-          view.getWindowMappingFn().getSideInputWindow(mainInputWindow);
+          view.getWindowingStrategyInternal().getWindowFn().getSideInputWindow(mainInputWindow);
       if (!sideInputReader.isReady(view, sideInputWindow)) {
         return false;
       }

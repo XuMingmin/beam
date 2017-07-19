@@ -39,23 +39,23 @@ public interface StateBinder<K> {
       String id, StateSpec<? super K, MapState<KeyT, ValueT>> spec,
       Coder<KeyT> mapKeyCoder, Coder<ValueT> mapValueCoder);
 
-  <InputT, AccumT, OutputT> CombiningState<InputT, AccumT, OutputT> bindCombining(
+  <InputT, AccumT, OutputT> AccumulatorCombiningState<InputT, AccumT, OutputT> bindCombiningValue(
       String id,
-      StateSpec<? super K, CombiningState<InputT, AccumT, OutputT>> spec,
+      StateSpec<? super K, AccumulatorCombiningState<InputT, AccumT, OutputT>> spec,
       Coder<AccumT> accumCoder,
       Combine.CombineFn<InputT, AccumT, OutputT> combineFn);
 
   <InputT, AccumT, OutputT>
-  CombiningState<InputT, AccumT, OutputT> bindKeyedCombining(
+      AccumulatorCombiningState<InputT, AccumT, OutputT> bindKeyedCombiningValue(
           String id,
-          StateSpec<? super K, CombiningState<InputT, AccumT, OutputT>> spec,
+          StateSpec<? super K, AccumulatorCombiningState<InputT, AccumT, OutputT>> spec,
           Coder<AccumT> accumCoder,
           Combine.KeyedCombineFn<? super K, InputT, AccumT, OutputT> combineFn);
 
   <InputT, AccumT, OutputT>
-  CombiningState<InputT, AccumT, OutputT> bindKeyedCombiningWithContext(
+      AccumulatorCombiningState<InputT, AccumT, OutputT> bindKeyedCombiningValueWithContext(
           String id,
-          StateSpec<? super K, CombiningState<InputT, AccumT, OutputT>> spec,
+          StateSpec<? super K, AccumulatorCombiningState<InputT, AccumT, OutputT>> spec,
           Coder<AccumT> accumCoder,
           CombineWithContext.KeyedCombineFnWithContext<? super K, InputT, AccumT, OutputT>
               combineFn);

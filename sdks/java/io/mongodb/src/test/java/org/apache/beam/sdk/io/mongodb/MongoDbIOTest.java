@@ -41,6 +41,7 @@ import java.io.Serializable;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 
+import org.apache.beam.sdk.testing.NeedsRunner;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Count;
@@ -58,6 +59,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,6 +145,7 @@ public class MongoDbIOTest implements Serializable {
   }
 
   @Test
+  @Category(NeedsRunner.class)
   public void testFullRead() throws Exception {
 
     PCollection<Document> output = pipeline.apply(
@@ -175,6 +178,7 @@ public class MongoDbIOTest implements Serializable {
   }
 
   @Test
+  @Category(NeedsRunner.class)
   public void testReadWithFilter() throws Exception {
 
     PCollection<Document> output = pipeline.apply(
@@ -191,6 +195,7 @@ public class MongoDbIOTest implements Serializable {
   }
 
   @Test
+  @Category(NeedsRunner.class)
   public void testWrite() throws Exception {
 
     ArrayList<Document> data = new ArrayList<>();

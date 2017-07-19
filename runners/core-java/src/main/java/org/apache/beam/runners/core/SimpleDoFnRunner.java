@@ -533,7 +533,7 @@ public class SimpleDoFnRunner<InputT, OutputT> implements DoFnRunner<InputT, Out
         }
       }
       return context.sideInput(
-          view, view.getWindowMappingFn().getSideInputWindow(window));
+          view, view.getWindowingStrategyInternal().getWindowFn().getSideInputWindow(window));
     }
 
     @Override

@@ -23,22 +23,48 @@ package org.apache.beam.sdk.util.state;
  *
  * @param <T> The type of elements in the set.
  */
-public interface SetState<T> extends GroupingState<T, Iterable<T>> {
+public interface SetState<T> extends CombiningState<T, Iterable<T>> {
   /**
    * Returns true if this set contains the specified element.
    */
-  ReadableState<Boolean> contains(T t);
+  boolean contains(T t);
 
   /**
-   * Ensures a value is a member of the set, returning {@code true} if it was added and {@code
-   * false} otherwise.
+   * Add a value to the buffer if it is not already present.
+   * If this set already contains the element, the call leaves the set
+   * unchanged and returns false.
    */
-  ReadableState<Boolean> addIfAbsent(T t);
+  boolean addIfAbsent(T t);
 
   /**
    * Removes the specified element from this set if it is present.
    */
   void remove(T t);
+
+  /**
+   * Indicate that elements will be read later.
+   * @param elements to be read later
+   * @return this for convenient chaining
+   */
+  SetState<T> readLater(Iterable<T> elements);
+
+  /**
+   * <p>Checks if SetState contains any given elements.</p>
+   *
+   * @param elements the elements to search for
+   * @return the {@code true} if any of the elements are found,
+   * {@code false} if no match
+   */
+  boolean containsAny(Iterable<T> elements);
+
+  /**
+   * <p>Checks if SetState contains all given elements.</p>
+   *
+   * @param elements the elements to find
+   * @return true if the SetState contains all elements,
+   *  false if not
+   */
+  boolean containsAll(Iterable<T> elements);
 
   @Override
   SetState<T> readLater();

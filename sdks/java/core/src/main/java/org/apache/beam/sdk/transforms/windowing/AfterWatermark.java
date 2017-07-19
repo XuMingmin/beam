@@ -55,7 +55,7 @@ import org.joda.time.Instant;
  *
  * <p>Additionaly firings before or after the watermark can be requested by calling
  * {@code AfterWatermark.pastEndOfWindow.withEarlyFirings(OnceTrigger)} or
- * {@code AfterWatermark.pastEndOfWindow.withLateFirings(OnceTrigger)}.
+ * {@code AfterWatermark.pastEndOfWindow.withEarlyFirings(OnceTrigger)}.
  */
 @Experimental(Experimental.Kind.TRIGGER)
 public class AfterWatermark {

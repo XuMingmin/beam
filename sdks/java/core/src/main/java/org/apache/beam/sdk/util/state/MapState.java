@@ -30,20 +30,21 @@ import java.util.Map;
 public interface MapState<K, V> extends State {
 
   /**
+   * Returns the value to which the specified key is mapped in the state.
+   */
+  V get(K key);
+
+  /**
    * Associates the specified value with the specified key in this state.
    */
   void put(K key, V value);
 
   /**
-   * A deferred read-followed-by-write.
-   *
-   * <p>When {@code read()} is called on the result or state is committed, it forces a read of the
-   * map and reconciliation with any pending modifications.
-   *
-   * <p>If the specified key is not already associated with a value (or is mapped to {@code null})
-   * associates it with the given value and returns {@code null}, else returns the current value.
+   * If the specified key is not already associated with a value (or is mapped
+   * to {@code null}) associates it with the given value and returns
+   * {@code null}, else returns the current value.
    */
-  ReadableState<V> putIfAbsent(K key, V value);
+  V putIfAbsent(K key, V value);
 
   /**
    * Removes the mapping for a key from this map if it is present.
@@ -51,29 +52,42 @@ public interface MapState<K, V> extends State {
   void remove(K key);
 
   /**
-   * A deferred lookup.
-   *
-   * <p>A user is encouraged to call {@code get} for all relevant keys and call {@code readLater()}
-   * on the results.
-   *
-   * <p>When {@code read()} is called, a particular state implementation is encouraged to perform
-   * all pending reads in a single batch.
+   * A bulk get.
+   * @param keys the keys to search for
+   * @return a iterable view of values, maybe some values is null.
+   * The order of values corresponds to the order of the keys.
    */
-  ReadableState<V> get(K key);
+  Iterable<V> get(Iterable<K> keys);
+
+  /**
+   * Indicate that specified key will be read later.
+   */
+  MapState<K, V> getLater(K k);
+
+  /**
+   * Indicate that specified batch keys will be read later.
+   */
+  MapState<K, V> getLater(Iterable<K> keys);
 
   /**
    * Returns a iterable view of the keys contained in this map.
    */
-  ReadableState<Iterable<K>> keys();
+  Iterable<K> keys();
 
   /**
    * Returns a iterable view of the values contained in this map.
    */
-  ReadableState<Iterable<V>> values();
+  Iterable<V> values();
+
+  /**
+   * Indicate that all key-values will be read later.
+   */
+  MapState<K, V> iterateLater();
 
   /**
    * Returns a iterable view of all key-values.
    */
-  ReadableState<Iterable<Map.Entry<K, V>>> entries();
+  Iterable<Map.Entry<K, V>> iterate();
+
 }
 
