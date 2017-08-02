@@ -21,7 +21,7 @@ import java.io.Serializable;
 
 import org.apache.beam.dsls.sql.planner.BeamQueryPlanner;
 import org.apache.beam.dsls.sql.schema.BaseBeamTable;
-import org.apache.beam.dsls.sql.schema.BeamRowType;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecordTypeProvider;
 import org.apache.beam.dsls.sql.schema.BeamSqlUdaf;
 import org.apache.beam.dsls.sql.schema.BeamSqlUdf;
 import org.apache.beam.dsls.sql.utils.CalciteUtils;
@@ -85,8 +85,8 @@ public class BeamSqlEnv implements Serializable{
   }
 
   private static class BeamCalciteTable implements ScannableTable, Serializable {
-    private BeamRowType beamSqlRowType;
-    public BeamCalciteTable(BeamRowType beamSqlRowType) {
+    private BeamSqlRecordTypeProvider beamSqlRowType;
+    public BeamCalciteTable(BeamSqlRecordTypeProvider beamSqlRowType) {
       this.beamSqlRowType = beamSqlRowType;
     }
     @Override

@@ -20,8 +20,8 @@ package org.apache.beam.dsls.sql;
 import com.google.auto.value.AutoValue;
 import org.apache.beam.dsls.sql.rel.BeamRelNode;
 import org.apache.beam.dsls.sql.schema.BeamPCollectionTable;
-import org.apache.beam.dsls.sql.schema.BeamRow;
-import org.apache.beam.dsls.sql.schema.BeamRowCoder;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecord;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecordCoder;
 import org.apache.beam.dsls.sql.schema.BeamSqlUdaf;
 import org.apache.beam.dsls.sql.schema.BeamSqlUdf;
 import org.apache.beam.sdk.annotations.Experimental;
@@ -111,7 +111,7 @@ public class BeamSql {
    */
   @AutoValue
   public abstract static class QueryTransform extends
-      PTransform<PCollectionTuple, PCollection<BeamRow>> {
+      PTransform<PCollectionTuple, PCollection<BeamSqlRecord>> {
     abstract BeamSqlEnv getSqlEnv();
     abstract String getSqlQuery();
 
@@ -143,7 +143,7 @@ public class BeamSql {
      }
 
     @Override
-    public PCollection<BeamRow> expand(PCollectionTuple input) {
+    public PCollection<BeamSqlRecord> expand(PCollectionTuple input) {
       registerTables(input);
 
       BeamRelNode beamRelNode = null;
@@ -163,11 +163,11 @@ public class BeamSql {
     //register tables, related with input PCollections.
     private void registerTables(PCollectionTuple input){
       for (TupleTag<?> sourceTag : input.getAll().keySet()) {
-        PCollection<BeamRow> sourceStream = (PCollection<BeamRow>) input.get(sourceTag);
-        BeamRowCoder sourceCoder = (BeamRowCoder) sourceStream.getCoder();
+        PCollection<BeamSqlRecord> sourceStream = (PCollection<BeamSqlRecord>) input.get(sourceTag);
+        BeamSqlRecordCoder sourceCoder = (BeamSqlRecordCoder) sourceStream.getCoder();
 
         getSqlEnv().registerTable(sourceTag.getId(),
-            new BeamPCollectionTable(sourceStream, sourceCoder.getTableSchema()));
+            new BeamPCollectionTable(sourceStream, sourceCoder.getSqlRecordType()));
       }
     }
   }
@@ -178,7 +178,7 @@ public class BeamSql {
    */
   @AutoValue
   public abstract static class SimpleQueryTransform
-      extends PTransform<PCollection<BeamRow>, PCollection<BeamRow>> {
+      extends PTransform<PCollection<BeamSqlRecord>, PCollection<BeamSqlRecord>> {
     private static final String PCOLLECTION_TABLE_NAME = "PCOLLECTION";
     abstract BeamSqlEnv getSqlEnv();
     abstract String getSqlQuery();
@@ -232,9 +232,9 @@ public class BeamSql {
     }
 
     @Override
-    public PCollection<BeamRow> expand(PCollection<BeamRow> input) {
+    public PCollection<BeamSqlRecord> expand(PCollection<BeamSqlRecord> input) {
       validateQuery();
-      return PCollectionTuple.of(new TupleTag<BeamRow>(PCOLLECTION_TABLE_NAME), input)
+      return PCollectionTuple.of(new TupleTag<BeamSqlRecord>(PCOLLECTION_TABLE_NAME), input)
           .apply(QueryTransform.builder()
               .setSqlEnv(getSqlEnv())
               .setSqlQuery(getSqlQuery())

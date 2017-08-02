@@ -32,9 +32,9 @@ import java.util.TimeZone;
 import org.apache.beam.dsls.sql.BeamSql;
 import org.apache.beam.dsls.sql.TestUtils;
 import org.apache.beam.dsls.sql.mock.MockedBoundedTable;
-import org.apache.beam.dsls.sql.schema.BeamRow;
-import org.apache.beam.dsls.sql.schema.BeamRowCoder;
-import org.apache.beam.dsls.sql.schema.BeamRowType;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecord;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecordCoder;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecordTypeProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.values.PCollection;
@@ -62,8 +62,8 @@ public class BeamSqlBuiltinFunctionsIntegrationTestBase {
   @Rule
   public final TestPipeline pipeline = TestPipeline.create();
 
-  protected PCollection<BeamRow> getTestPCollection() {
-    BeamRowType type = BeamRowType.create(
+  protected PCollection<BeamSqlRecord> getTestPCollection() {
+    BeamSqlRecordTypeProvider type = BeamSqlRecordTypeProvider.create(
         Arrays.asList("ts", "c_tinyint", "c_smallint",
             "c_integer", "c_bigint", "c_float", "c_double", "c_decimal",
             "c_tinyint_max", "c_smallint_max", "c_integer_max", "c_bigint_max"),
@@ -89,7 +89,7 @@ public class BeamSqlBuiltinFunctionsIntegrationTestBase {
               9223372036854775807L
           )
           .buildIOReader(pipeline)
-          .setCoder(new BeamRowCoder(type));
+          .setCoder(new BeamSqlRecordCoder(type));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -140,7 +140,7 @@ public class BeamSqlBuiltinFunctionsIntegrationTestBase {
      * Build the corresponding SQL, compile to Beam Pipeline, run it, and check the result.
      */
     public void buildRunAndCheck() {
-      PCollection<BeamRow> inputCollection = getTestPCollection();
+      PCollection<BeamSqlRecord> inputCollection = getTestPCollection();
       System.out.println("SQL:>\n" + getSql());
       try {
         List<String> names = new ArrayList<>();
@@ -153,10 +153,10 @@ public class BeamSqlBuiltinFunctionsIntegrationTestBase {
           values.add(pair.getValue());
         }
 
-        PCollection<BeamRow> rows = inputCollection.apply(BeamSql.simpleQuery(getSql()));
+        PCollection<BeamSqlRecord> rows = inputCollection.apply(BeamSql.simpleQuery(getSql()));
         PAssert.that(rows).containsInAnyOrder(
             TestUtils.RowsBuilder
-                .of(BeamRowType.create(names, types))
+                .of(BeamSqlRecordTypeProvider.create(names, types))
                 .addRows(values)
                 .getRows()
         );

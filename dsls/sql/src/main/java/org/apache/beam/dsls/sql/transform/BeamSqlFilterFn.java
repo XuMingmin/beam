@@ -20,14 +20,14 @@ package org.apache.beam.dsls.sql.transform;
 import java.util.List;
 import org.apache.beam.dsls.sql.interpreter.BeamSqlExpressionExecutor;
 import org.apache.beam.dsls.sql.rel.BeamFilterRel;
-import org.apache.beam.dsls.sql.schema.BeamRow;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecord;
 import org.apache.beam.sdk.transforms.DoFn;
 
 /**
  * {@code BeamSqlFilterFn} is the executor for a {@link BeamFilterRel} step.
  *
  */
-public class BeamSqlFilterFn extends DoFn<BeamRow, BeamRow> {
+public class BeamSqlFilterFn extends DoFn<BeamSqlRecord, BeamSqlRecord> {
 
   private String stepName;
   private BeamSqlExpressionExecutor executor;
@@ -45,7 +45,7 @@ public class BeamSqlFilterFn extends DoFn<BeamRow, BeamRow> {
 
   @ProcessElement
   public void processElement(ProcessContext c) {
-    BeamRow in = c.element();
+    BeamSqlRecord in = c.element();
 
     List<Object> result = executor.execute(in);
 

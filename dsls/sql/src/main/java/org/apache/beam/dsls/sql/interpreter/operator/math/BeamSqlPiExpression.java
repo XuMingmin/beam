@@ -20,7 +20,7 @@ package org.apache.beam.dsls.sql.interpreter.operator.math;
 
 import org.apache.beam.dsls.sql.interpreter.operator.BeamSqlExpression;
 import org.apache.beam.dsls.sql.interpreter.operator.BeamSqlPrimitive;
-import org.apache.beam.dsls.sql.schema.BeamRow;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecord;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
@@ -36,7 +36,7 @@ public class BeamSqlPiExpression extends BeamSqlExpression {
     return true;
   }
 
-  @Override public BeamSqlPrimitive evaluate(BeamRow inputRow) {
+  @Override public BeamSqlPrimitive evaluate(BeamSqlRecord inputRow) {
     return BeamSqlPrimitive.of(SqlTypeName.DOUBLE, Math.PI);
   }
 }

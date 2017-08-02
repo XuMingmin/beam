@@ -21,7 +21,7 @@ package org.apache.beam.dsls.sql.interpreter.operator;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
-import org.apache.beam.dsls.sql.schema.BeamRow;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecord;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
@@ -41,7 +41,7 @@ public class BeamSqlReinterpretExpression extends BeamSqlExpression {
         && SqlTypeName.DATETIME_TYPES.contains(opType(0));
   }
 
-  @Override public BeamSqlPrimitive evaluate(BeamRow inputRow) {
+  @Override public BeamSqlPrimitive evaluate(BeamSqlRecord inputRow) {
     if (opType(0) == SqlTypeName.TIME) {
       GregorianCalendar date = opValueEvaluated(0, inputRow);
       return BeamSqlPrimitive.of(outputType, date.getTimeInMillis());

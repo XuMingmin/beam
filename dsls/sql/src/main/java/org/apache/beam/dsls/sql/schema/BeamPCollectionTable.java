@@ -29,14 +29,14 @@ import org.apache.beam.sdk.values.PDone;
  */
 public class BeamPCollectionTable extends BaseBeamTable {
   private BeamIOType ioType;
-  private transient PCollection<BeamRow> upstream;
+  private transient PCollection<BeamSqlRecord> upstream;
 
-  protected BeamPCollectionTable(BeamRowType beamSqlRowType) {
+  protected BeamPCollectionTable(BeamSqlRecordTypeProvider beamSqlRowType) {
     super(beamSqlRowType);
   }
 
-  public BeamPCollectionTable(PCollection<BeamRow> upstream,
-      BeamRowType beamSqlRowType){
+  public BeamPCollectionTable(PCollection<BeamSqlRecord> upstream,
+      BeamSqlRecordTypeProvider beamSqlRowType){
     this(beamSqlRowType);
     ioType = upstream.isBounded().equals(IsBounded.BOUNDED)
         ? BeamIOType.BOUNDED : BeamIOType.UNBOUNDED;
@@ -49,12 +49,12 @@ public class BeamPCollectionTable extends BaseBeamTable {
   }
 
   @Override
-  public PCollection<BeamRow> buildIOReader(Pipeline pipeline) {
+  public PCollection<BeamSqlRecord> buildIOReader(Pipeline pipeline) {
     return upstream;
   }
 
   @Override
-  public PTransform<? super PCollection<BeamRow>, PDone> buildIOWriter() {
+  public PTransform<? super PCollection<BeamSqlRecord>, PDone> buildIOWriter() {
     throw new IllegalArgumentException("cannot use [BeamPCollectionTable] as target");
   }
 

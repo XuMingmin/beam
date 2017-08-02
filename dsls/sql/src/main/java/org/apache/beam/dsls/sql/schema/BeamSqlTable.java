@@ -37,16 +37,16 @@ public interface BeamSqlTable {
    * create a {@code PCollection<BeamSqlRow>} from source.
    *
    */
-  PCollection<BeamRow> buildIOReader(Pipeline pipeline);
+  PCollection<BeamSqlRecord> buildIOReader(Pipeline pipeline);
 
   /**
    * create a {@code IO.write()} instance to write to target.
    *
    */
-   PTransform<? super PCollection<BeamRow>, PDone> buildIOWriter();
+   PTransform<? super PCollection<BeamSqlRecord>, PDone> buildIOWriter();
 
   /**
    * Get the schema info of the table.
    */
-   BeamRowType getRowType();
+   BeamSqlRecordTypeProvider getRowType();
 }

@@ -20,9 +20,9 @@ package org.apache.beam.dsls.sql.rel;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.dsls.sql.BeamSqlEnv;
-import org.apache.beam.dsls.sql.schema.BeamRow;
-import org.apache.beam.dsls.sql.schema.BeamRowCoder;
-import org.apache.beam.dsls.sql.schema.BeamRowType;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecord;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecordCoder;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecordTypeProvider;
 import org.apache.beam.dsls.sql.transform.BeamAggregationTransforms;
 import org.apache.beam.dsls.sql.utils.CalciteUtils;
 import org.apache.beam.sdk.coders.KvCoder;
@@ -55,7 +55,7 @@ import org.joda.time.Duration;
  */
 public class BeamAggregationRel extends Aggregate implements BeamRelNode {
   private int windowFieldIdx = -1;
-  private WindowFn<BeamRow, BoundedWindow> windowFn;
+  private WindowFn<BeamSqlRecord, BoundedWindow> windowFn;
   private Trigger trigger;
   private Duration allowedLatence = Duration.ZERO;
 
@@ -71,12 +71,12 @@ public class BeamAggregationRel extends Aggregate implements BeamRelNode {
   }
 
   @Override
-  public PCollection<BeamRow> buildBeamPipeline(PCollectionTuple inputPCollections
+  public PCollection<BeamSqlRecord> buildBeamPipeline(PCollectionTuple inputPCollections
       , BeamSqlEnv sqlEnv) throws Exception {
     RelNode input = getInput();
     String stageName = BeamSqlRelUtils.getStageName(this) + "_";
 
-    PCollection<BeamRow> upstream =
+    PCollection<BeamSqlRecord> upstream =
         BeamSqlRelUtils.getBeamRelInput(input).buildBeamPipeline(inputPCollections, sqlEnv);
     if (windowFieldIdx != -1) {
       upstream = upstream.apply(stageName + "assignEventTimestamp", WithTimestamps
@@ -84,14 +84,14 @@ public class BeamAggregationRel extends Aggregate implements BeamRelNode {
           .setCoder(upstream.getCoder());
     }
 
-    PCollection<BeamRow> windowStream = upstream.apply(stageName + "window",
+    PCollection<BeamSqlRecord> windowStream = upstream.apply(stageName + "window",
         Window.into(windowFn)
         .triggering(trigger)
         .withAllowedLateness(allowedLatence)
         .accumulatingFiredPanes());
 
-    BeamRowCoder keyCoder = new BeamRowCoder(exKeyFieldsSchema(input.getRowType()));
-    PCollection<KV<BeamRow, BeamRow>> exCombineByStream = windowStream.apply(
+    BeamSqlRecordCoder keyCoder = new BeamSqlRecordCoder(exKeyFieldsSchema(input.getRowType()));
+    PCollection<KV<BeamSqlRecord, BeamSqlRecord>> exCombineByStream = windowStream.apply(
         stageName + "exCombineBy",
         WithKeys
             .of(new BeamAggregationTransforms.AggregationGroupByKeyFn(
@@ -99,19 +99,19 @@ public class BeamAggregationRel extends Aggregate implements BeamRelNode {
         .setCoder(KvCoder.of(keyCoder, upstream.getCoder()));
 
 
-    BeamRowCoder aggCoder = new BeamRowCoder(exAggFieldsSchema());
+    BeamSqlRecordCoder aggCoder = new BeamSqlRecordCoder(exAggFieldsSchema());
 
-    PCollection<KV<BeamRow, BeamRow>> aggregatedStream = exCombineByStream.apply(
+    PCollection<KV<BeamSqlRecord, BeamSqlRecord>> aggregatedStream = exCombineByStream.apply(
         stageName + "combineBy",
-        Combine.<BeamRow, BeamRow, BeamRow>perKey(
+        Combine.<BeamSqlRecord, BeamSqlRecord, BeamSqlRecord>perKey(
             new BeamAggregationTransforms.AggregationAdaptor(getAggCallList(),
                 CalciteUtils.toBeamRowType(input.getRowType()))))
         .setCoder(KvCoder.of(keyCoder, aggCoder));
 
-    PCollection<BeamRow> mergedStream = aggregatedStream.apply(stageName + "mergeRecord",
+    PCollection<BeamSqlRecord> mergedStream = aggregatedStream.apply(stageName + "mergeRecord",
         ParDo.of(new BeamAggregationTransforms.MergeAggregationRecord(
             CalciteUtils.toBeamRowType(getRowType()), getAggCallList(), windowFieldIdx)));
-    mergedStream.setCoder(new BeamRowCoder(CalciteUtils.toBeamRowType(getRowType())));
+    mergedStream.setCoder(new BeamSqlRecordCoder(CalciteUtils.toBeamRowType(getRowType())));
 
     return mergedStream;
   }
@@ -119,8 +119,8 @@ public class BeamAggregationRel extends Aggregate implements BeamRelNode {
   /**
    * Type of sub-rowrecord used as Group-By keys.
    */
-  private BeamRowType exKeyFieldsSchema(RelDataType relDataType) {
-    BeamRowType inputRowType = CalciteUtils.toBeamRowType(relDataType);
+  private BeamSqlRecordTypeProvider exKeyFieldsSchema(RelDataType relDataType) {
+    BeamSqlRecordTypeProvider inputRowType = CalciteUtils.toBeamRowType(relDataType);
     List<String> fieldNames = new ArrayList<>();
     List<Integer> fieldTypes = new ArrayList<>();
     for (int i : groupSet.asList()) {
@@ -129,13 +129,13 @@ public class BeamAggregationRel extends Aggregate implements BeamRelNode {
         fieldTypes.add(inputRowType.getFieldsType().get(i));
       }
     }
-    return BeamRowType.create(fieldNames, fieldTypes);
+    return BeamSqlRecordTypeProvider.create(fieldNames, fieldTypes);
   }
 
   /**
    * Type of sub-rowrecord, that represents the list of aggregation fields.
    */
-  private BeamRowType exAggFieldsSchema() {
+  private BeamSqlRecordTypeProvider exAggFieldsSchema() {
     List<String> fieldNames = new ArrayList<>();
     List<Integer> fieldTypes = new ArrayList<>();
     for (AggregateCall ac : getAggCallList()) {
@@ -143,7 +143,7 @@ public class BeamAggregationRel extends Aggregate implements BeamRelNode {
       fieldTypes.add(CalciteUtils.toJavaType(ac.type.getSqlTypeName()));
     }
 
-    return BeamRowType.create(fieldNames, fieldTypes);
+    return BeamSqlRecordTypeProvider.create(fieldNames, fieldTypes);
   }
 
   @Override

@@ -33,7 +33,7 @@ public class BeamRowCoderTest {
 
   @Test
   public void encodeAndDecode() throws Exception {
-    BeamRowType beamSQLRowType = BeamRowType.create(
+    BeamSqlRecordTypeProvider beamSQLRowType = BeamSqlRecordTypeProvider.create(
         Arrays.asList("col_tinyint", "col_smallint", "col_integer", "col_bigint", "col_float",
             "col_double", "col_decimal", "col_string_varchar", "col_time", "col_timestamp",
             "col_boolean"),
@@ -41,7 +41,7 @@ public class BeamRowCoderTest {
             Types.DOUBLE, Types.DECIMAL, Types.VARCHAR, Types.TIME, Types.TIMESTAMP,
             Types.BOOLEAN));
 
-    BeamRow row = new BeamRow(beamSQLRowType);
+    BeamSqlRecord row = new BeamSqlRecord(beamSQLRowType);
     row.addField("col_tinyint", Byte.valueOf("1"));
     row.addField("col_smallint", Short.valueOf("1"));
     row.addField("col_integer", 1);
@@ -57,7 +57,7 @@ public class BeamRowCoderTest {
     row.addField("col_boolean", true);
 
 
-    BeamRowCoder coder = new BeamRowCoder(beamSQLRowType);
+    BeamSqlRecordCoder coder = new BeamSqlRecordCoder(beamSQLRowType);
     CoderProperties.coderDecodeEncodeEqual(coder, row);
   }
 }

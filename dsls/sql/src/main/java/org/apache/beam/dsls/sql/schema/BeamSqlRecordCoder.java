@@ -37,10 +37,10 @@ import org.apache.beam.sdk.coders.ListCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 
 /**
- *  A {@link Coder} encodes {@link BeamRow}.
+ *  A {@link Coder} encodes {@link BeamSqlRecord}.
  */
-public class BeamRowCoder extends CustomCoder<BeamRow> {
-  private BeamRowType tableSchema;
+public class BeamSqlRecordCoder extends CustomCoder<BeamSqlRecord> {
+  private BeamSqlRecordTypeProvider sqlRecordType;
 
   private static final ListCoder<Integer> listCoder = ListCoder.of(BigEndianIntegerCoder.of());
 
@@ -52,19 +52,20 @@ public class BeamRowCoder extends CustomCoder<BeamRow> {
   private static final BigDecimalCoder bigDecimalCoder = BigDecimalCoder.of();
   private static final ByteCoder byteCoder = ByteCoder.of();
 
-  public BeamRowCoder(BeamRowType tableSchema) {
-    this.tableSchema = tableSchema;
+  public BeamSqlRecordCoder(BeamSqlRecordTypeProvider sqlRecordType) {
+    this.sqlRecordType = sqlRecordType;
   }
 
   @Override
-  public void encode(BeamRow value, OutputStream outStream) throws CoderException, IOException {
+  public void encode(BeamSqlRecord value, OutputStream outStream)
+      throws CoderException, IOException {
     listCoder.encode(value.getNullFields(), outStream);
     for (int idx = 0; idx < value.size(); ++idx) {
       if (value.getNullFields().contains(idx)) {
         continue;
       }
 
-      switch (value.getDataType().getFieldsType().get(idx)) {
+      switch (sqlRecordType.getFieldsType().get(idx)) {
         case Types.INTEGER:
           intCoder.encode(value.getInteger(idx), outStream);
           break;
@@ -103,7 +104,7 @@ public class BeamRowCoder extends CustomCoder<BeamRow> {
 
         default:
           throw new UnsupportedOperationException(
-              "Data type: " + value.getDataType().getFieldsType().get(idx) + " not supported yet!");
+              "Data type: " + sqlRecordType.getFieldsType().get(idx) + " not supported yet!");
       }
     }
 
@@ -112,17 +113,17 @@ public class BeamRowCoder extends CustomCoder<BeamRow> {
   }
 
   @Override
-  public BeamRow decode(InputStream inStream) throws CoderException, IOException {
+  public BeamSqlRecord decode(InputStream inStream) throws CoderException, IOException {
     List<Integer> nullFields = listCoder.decode(inStream);
 
-    BeamRow record = new BeamRow(tableSchema);
+    BeamSqlRecord record = new BeamSqlRecord(sqlRecordType);
     record.setNullFields(nullFields);
-    for (int idx = 0; idx < tableSchema.size(); ++idx) {
+    for (int idx = 0; idx < sqlRecordType.size(); ++idx) {
       if (nullFields.contains(idx)) {
         continue;
       }
 
-      switch (tableSchema.getFieldsType().get(idx)) {
+      switch (sqlRecordType.getFieldsType().get(idx)) {
         case Types.INTEGER:
           record.addField(idx, intCoder.decode(inStream));
           break;
@@ -163,7 +164,7 @@ public class BeamRowCoder extends CustomCoder<BeamRow> {
 
         default:
           throw new UnsupportedOperationException("Data type: "
-              + tableSchema.getFieldsType().get(idx)
+              + sqlRecordType.getFieldsType().get(idx)
               + " not supported yet!");
       }
     }
@@ -174,8 +175,8 @@ public class BeamRowCoder extends CustomCoder<BeamRow> {
     return record;
   }
 
-  public BeamRowType getTableSchema() {
-    return tableSchema;
+  public BeamSqlRecordTypeProvider getSqlRecordType() {
+    return sqlRecordType;
   }
 
   @Override

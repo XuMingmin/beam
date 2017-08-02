@@ -21,13 +21,13 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
-import org.apache.beam.dsls.sql.schema.BeamRow;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecord;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.NlsString;
 
 /**
  * {@link BeamSqlPrimitive} is a special, self-reference {@link BeamSqlExpression}.
- * It holds the value, and return it directly during {@link #evaluate(BeamRow)}.
+ * It holds the value, and return it directly during {@link #evaluate(BeamSqlRecord)}.
  *
  */
 public class BeamSqlPrimitive<T> extends BeamSqlExpression {
@@ -145,7 +145,7 @@ public class BeamSqlPrimitive<T> extends BeamSqlExpression {
   }
 
   @Override
-  public BeamSqlPrimitive<T> evaluate(BeamRow inputRow) {
+  public BeamSqlPrimitive<T> evaluate(BeamSqlRecord inputRow) {
     return this;
   }
 

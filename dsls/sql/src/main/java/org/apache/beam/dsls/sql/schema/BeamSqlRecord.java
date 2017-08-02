@@ -17,24 +17,25 @@
  */
 package org.apache.beam.dsls.sql.schema;
 
-import com.google.auto.value.AutoValue;
-import java.io.Serializable;
 import java.util.List;
+import org.apache.beam.sdk.values.BeamRecord;
+import org.apache.beam.sdk.values.PCollection;
 
 /**
- * Field type information in {@link BeamRow}.
- *
+ * {@link BeamSqlRecord} represents one row element in a {@link PCollection},
+ * with type provider {@link BeamSqlRecordTypeProvider}.
  */
-@AutoValue
-public abstract class BeamRowType implements Serializable {
-  public abstract List<String> getFieldsName();
-  public abstract List<Integer> getFieldsType();
-
-  public static BeamRowType create(List<String> fieldNames, List<Integer> fieldTypes) {
-    return new AutoValue_BeamRowType(fieldNames, fieldTypes);
+public class BeamSqlRecord extends BeamRecord {
+  public BeamSqlRecord(BeamSqlRecordTypeProvider dataType, List<Object> dataValues) {
+    super(dataType, dataValues);
   }
 
-  public int size() {
-    return getFieldsName().size();
+  public BeamSqlRecord(BeamSqlRecordTypeProvider dataType) {
+    super(dataType);
+  }
+
+  @Override
+  public BeamSqlRecordTypeProvider getDataType() {
+    return (BeamSqlRecordTypeProvider) super.getDataType();
   }
 }

@@ -21,7 +21,7 @@ package org.apache.beam.dsls.sql.rel;
 import java.io.Serializable;
 import java.util.List;
 import org.apache.beam.dsls.sql.BeamSqlEnv;
-import org.apache.beam.dsls.sql.schema.BeamRow;
+import org.apache.beam.dsls.sql.schema.BeamSqlRecord;
 import org.apache.beam.dsls.sql.transform.BeamSetOperatorsTransforms;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.ParDo;
@@ -62,11 +62,11 @@ public class BeamSetOperatorRelBase {
     this.all = all;
   }
 
-  public PCollection<BeamRow> buildBeamPipeline(PCollectionTuple inputPCollections
+  public PCollection<BeamSqlRecord> buildBeamPipeline(PCollectionTuple inputPCollections
       , BeamSqlEnv sqlEnv) throws Exception {
-    PCollection<BeamRow> leftRows = BeamSqlRelUtils.getBeamRelInput(inputs.get(0))
+    PCollection<BeamSqlRecord> leftRows = BeamSqlRelUtils.getBeamRelInput(inputs.get(0))
         .buildBeamPipeline(inputPCollections, sqlEnv);
-    PCollection<BeamRow> rightRows = BeamSqlRelUtils.getBeamRelInput(inputs.get(1))
+    PCollection<BeamSqlRecord> rightRows = BeamSqlRelUtils.getBeamRelInput(inputs.get(1))
         .buildBeamPipeline(inputPCollections, sqlEnv);
 
     WindowFn leftWindow = leftRows.getWindowingStrategy().getWindowFn();
@@ -77,20 +77,20 @@ public class BeamSetOperatorRelBase {
           + leftWindow + " VS " + rightWindow);
     }
 
-    final TupleTag<BeamRow> leftTag = new TupleTag<>();
-    final TupleTag<BeamRow> rightTag = new TupleTag<>();
+    final TupleTag<BeamSqlRecord> leftTag = new TupleTag<>();
+    final TupleTag<BeamSqlRecord> rightTag = new TupleTag<>();
 
     // co-group
     String stageName = BeamSqlRelUtils.getStageName(beamRelNode);
-    PCollection<KV<BeamRow, CoGbkResult>> coGbkResultCollection = KeyedPCollectionTuple
+    PCollection<KV<BeamSqlRecord, CoGbkResult>> coGbkResultCollection = KeyedPCollectionTuple
         .of(leftTag, leftRows.apply(
             stageName + "_CreateLeftIndex", MapElements.via(
                 new BeamSetOperatorsTransforms.BeamSqlRow2KvFn())))
         .and(rightTag, rightRows.apply(
             stageName + "_CreateRightIndex", MapElements.via(
                 new BeamSetOperatorsTransforms.BeamSqlRow2KvFn())))
-        .apply(CoGroupByKey.<BeamRow>create());
-    PCollection<BeamRow> ret = coGbkResultCollection
+        .apply(CoGroupByKey.<BeamSqlRecord>create());
+    PCollection<BeamSqlRecord> ret = coGbkResultCollection
         .apply(ParDo.of(new BeamSetOperatorsTransforms.SetOperatorFilteringDoFn(leftTag, rightTag,
             opType, all)));
     return ret;
