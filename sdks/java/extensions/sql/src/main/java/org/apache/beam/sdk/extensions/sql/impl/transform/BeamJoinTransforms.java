@@ -24,12 +24,17 @@ import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.extensions.sql.BeamRecordSqlType;
 import org.apache.beam.sdk.extensions.sql.BeamSqlRecordHelper;
+import org.apache.beam.sdk.extensions.sql.impl.schema.BeamSeekableTable;
 import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.BeamRecord;
 import org.apache.beam.sdk.values.KV;
+import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionView;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 
 /**
@@ -125,6 +130,28 @@ public class BeamJoinTransforms {
       BeamRecord rightRow = parts.getValue();
       return combineTwoRowsIntoOne(leftRow, rightRow, false);
     }
+  }
+
+  public static class JoinAsLookup extends PTransform<PCollection<BeamRecord>, PCollection<BeamRecord>>{
+    private RexNode joinCondition;
+    BeamSeekableTable seekableTable;
+    
+    
+    
+    public JoinAsLookup(RexNode joinCondition, BeamSeekableTable seekableTable) {
+      this.joinCondition = joinCondition;
+      this.seekableTable = seekableTable;
+    }
+
+
+
+    @Override
+    public PCollection<BeamRecord> expand(PCollection<BeamRecord> input) {
+      return input.apply("join_as_lookup", ParDo.of(new DoFn<BeamRecord, BeamRecord>(){
+        
+      }));
+    }
+    
   }
 
   /**

@@ -18,6 +18,7 @@
 
 package org.apache.beam.sdk.extensions.sql.impl.rel;
 
+import com.google.common.base.Joiner;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,7 +27,10 @@ import java.util.Set;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.extensions.sql.BeamRecordSqlType;
+import org.apache.beam.sdk.extensions.sql.BeamSqlDslJoinTest;
 import org.apache.beam.sdk.extensions.sql.impl.BeamSqlEnv;
+import org.apache.beam.sdk.extensions.sql.impl.schema.BeamSeekableTable;
+import org.apache.beam.sdk.extensions.sql.impl.schema.BeamSqlTable;
 import org.apache.beam.sdk.extensions.sql.impl.transform.BeamJoinTransforms;
 import org.apache.beam.sdk.extensions.sql.impl.utils.CalciteUtils;
 import org.apache.beam.sdk.transforms.MapElements;
@@ -97,10 +101,13 @@ public class BeamJoinRel extends Join implements BeamRelNode {
       BeamSqlEnv sqlEnv)
       throws Exception {
     BeamRelNode leftRelNode = BeamSqlRelUtils.getBeamRelInput(left);
+    final BeamRelNode rightRelNode = BeamSqlRelUtils.getBeamRelInput(right);
+    if(seekable(leftRelNode, sqlEnv) ^ seekable(rightRelNode, sqlEnv)){
+      return joinAsLookup(leftRelNode, rightRelNode, inputPCollections, sqlEnv);
+    }
+
     BeamRecordSqlType leftRowType = CalciteUtils.toBeamRowType(left.getRowType());
     PCollection<BeamRecord> leftRows = leftRelNode.buildBeamPipeline(inputPCollections, sqlEnv);
-
-    final BeamRelNode rightRelNode = BeamSqlRelUtils.getBeamRelInput(right);
     PCollection<BeamRecord> rightRows = rightRelNode.buildBeamPipeline(inputPCollections, sqlEnv);
 
     String stageName = BeamSqlRelUtils.getStageName(this);
@@ -182,6 +189,44 @@ public class BeamJoinRel extends Join implements BeamRelNode {
       throw new UnsupportedOperationException(
           "The inputs to the JOIN have un-joinnable windowFns: " + leftWinFn + ", " + rightWinFn);
     }
+  }
+
+  private PCollection<BeamRecord> joinAsLookup(BeamRelNode leftRelNode, BeamRelNode rightRelNode,
+      PCollectionTuple inputPCollections, BeamSqlEnv sqlEnv) throws Exception {
+    PCollection<BeamRecord> factStream = null;
+    BeamSeekableTable seekableTable = null;
+    if (seekable(leftRelNode, sqlEnv)) {
+      factStream = rightRelNode.buildBeamPipeline(inputPCollections, sqlEnv);
+      seekableTable = getSeekableTableFromRelNode(rightRelNode, sqlEnv);
+    } else {
+      factStream = leftRelNode.buildBeamPipeline(inputPCollections, sqlEnv);
+      seekableTable = getSeekableTableFromRelNode(rightRelNode, sqlEnv);
+    }
+    
+    
+    return factStream.apply("join_as_lookup", new BeamJoinTransforms.JoinAsLookup(condition, seekableTable));
+  }
+
+  private BeamSeekableTable getSeekableTableFromRelNode(BeamRelNode relNode, BeamSqlEnv sqlEnv) {
+    BeamIOSourceRel srcRel = (BeamIOSourceRel) relNode;
+    String tableName = Joiner.on('.').join(srcRel.getTable().getQualifiedName());
+    BeamSqlTable sourceTable = sqlEnv.findTable(tableName);
+    return (BeamSeekableTable) sourceTable;
+  }
+
+  /**
+   * check if {@code BeamRelNode} implements {@code BeamSeekableTable}.
+   */
+  private boolean seekable(BeamRelNode relNode, BeamSqlEnv sqlEnv) {
+    if (relNode instanceof BeamIOSourceRel) {
+      BeamIOSourceRel srcRel = (BeamIOSourceRel) relNode;
+      String tableName = Joiner.on('.').join(srcRel.getTable().getQualifiedName());
+      BeamSqlTable sourceTable = sqlEnv.findTable(tableName);
+      if (sourceTable instanceof BeamSeekableTable) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private PCollection<BeamRecord> standardJoin(
