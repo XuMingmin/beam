@@ -155,6 +155,16 @@ public class BeamRecordSqlType extends BeamRecordType {
     }
   }
 
+  public BeamRecordSqlType subset(List<Integer> fieldsIndex) {
+    List<String> subNames = new ArrayList<>();
+    List<Integer> subTypes = new ArrayList<>();
+    for (int i : fieldsIndex) {
+      subNames.add(getFieldNames().get(i));
+      subTypes.add(fieldTypes.get(i));
+    }
+    return BeamRecordSqlType.create(subNames, subTypes);
+  }
+
   public List<Integer> getFieldTypes() {
     return Collections.unmodifiableList(fieldTypes);
   }

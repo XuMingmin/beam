@@ -34,6 +34,8 @@ import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionView;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 
@@ -132,26 +134,73 @@ public class BeamJoinTransforms {
     }
   }
 
-  public static class JoinAsLookup extends PTransform<PCollection<BeamRecord>, PCollection<BeamRecord>>{
-    private RexNode joinCondition;
+  /**
+   * Transform to execute Join as Lookup.
+   */
+  public static class JoinAsLookup
+      extends PTransform<PCollection<BeamRecord>, PCollection<BeamRecord>> {
+//    private RexNode joinCondition;
     BeamSeekableTable seekableTable;
-    
-    
-    
-    public JoinAsLookup(RexNode joinCondition, BeamSeekableTable seekableTable) {
-      this.joinCondition = joinCondition;
+    BeamRecordSqlType lkpRowType;
+//    int factTableColSize = 0; // TODO
+    BeamRecordSqlType joinSubsetType;
+    List<Integer> factJoinIdx;
+
+    public JoinAsLookup(RexNode joinCondition, BeamSeekableTable seekableTable,
+        BeamRecordSqlType lkpRowType, int factTableColSize) {
       this.seekableTable = seekableTable;
+      this.lkpRowType = lkpRowType;
+      joinFieldsMapping(joinCondition, factTableColSize);
     }
 
+    private void joinFieldsMapping(RexNode joinCondition, int factTableColSize) {
+      factJoinIdx = new ArrayList<>();
+      List<Integer> lkpJoinIdx = new ArrayList<>();
 
+      RexCall call = (RexCall) joinCondition;
+      if ("AND".equals(call.getOperator().getName())) {
+        List<RexNode> operands = call.getOperands();
+        for (RexNode rexNode : operands) {
+          factJoinIdx.add(((RexInputRef) ((RexCall) rexNode).getOperands().get(0)).getIndex());
+          lkpJoinIdx.add(((RexInputRef) ((RexCall) rexNode).getOperands().get(1)).getIndex()
+              - factTableColSize);
+        }
+      } else if ("=".equals(call.getOperator().getName())) {
+        factJoinIdx.add(((RexInputRef) call.getOperands().get(0)).getIndex());
+        lkpJoinIdx.add(((RexInputRef) call.getOperands().get(1)).getIndex()
+            - factTableColSize);
+      } else {
+        throw new UnsupportedOperationException(
+            "Operator " + call.getOperator().getName() + " is not supported in join condition");
+      }
+
+      joinSubsetType = lkpRowType.subset(lkpJoinIdx);
+    }
 
     @Override
     public PCollection<BeamRecord> expand(PCollection<BeamRecord> input) {
       return input.apply("join_as_lookup", ParDo.of(new DoFn<BeamRecord, BeamRecord>(){
-        
+        @ProcessElement
+        public void processElement(ProcessContext context) {
+          BeamRecord factRow = context.element();
+          BeamRecord joinSubRow = extractJoinSubRow(factRow);
+          List<BeamRecord> lookupRows = seekableTable.seekRecord(joinSubRow);
+          for (BeamRecord lr : lookupRows) {
+            context.output(combineTwoRowsIntoOneHelper(factRow, lr));
+          }
+        }
+
+        private BeamRecord extractJoinSubRow(BeamRecord factRow) {
+          List<Object> joinSubsetValues = new ArrayList<>();
+          for (int i : factJoinIdx) {
+            joinSubsetValues.add(factRow.getFieldValue(i));
+          }
+          return new BeamRecord(joinSubsetType, joinSubsetValues);
+        }
+
       }));
     }
-    
+
   }
 
   /**
