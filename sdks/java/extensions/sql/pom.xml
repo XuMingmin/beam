@@ -26,9 +26,9 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>beam-sdks-java-extensions-sql</artifactId>
+  <artifactId>beam-sdks-java-extensions-sql-ebay</artifactId>
   <name>Apache Beam :: SDKs :: Java :: Extensions :: SQL</name>
-  <description>Beam SQL provides a new interface to generate a Beam pipeline from SQL statement</description>
+  <description>Beam SQL provides a new interface to generate a Beam pipeline from SQL statement, eBay internal version.</description>
 
   <packaging>jar</packaging>
 
